@@ -7,10 +7,11 @@
 
 package frc.robot.subsystems.drive;
 
+import static edu.wpi.first.units.Units.Rotation;
 import static frc.robot.subsystems.drive.DriveConstants.*;
 import static frc.robot.util.SparkUtil.*;
 
-import com.revrobotics.AbsoluteEncoder;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.revrobotics.PersistMode;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
@@ -43,7 +44,8 @@ public class ModuleIOSpark implements ModuleIO {
   private final SparkBase driveSpark;
   private final SparkBase turnSpark;
   private final RelativeEncoder driveEncoder;
-  private final AbsoluteEncoder turnEncoder;
+  private final RelativeEncoder turnEncoder;
+  private final CANcoder cancoder;
 
   // Closed loop controllers
   private final SparkClosedLoopController driveController;
@@ -89,8 +91,17 @@ public class ModuleIOSpark implements ModuleIO {
               default -> 0;
             },
             MotorType.kBrushless);
+    cancoder =
+        new CANcoder(
+            switch (module) {
+              case 0 -> frontLeftCanCoderId;
+              case 1 -> frontRightCanCoderId;
+              case 2 -> backLeftCanCoderId;
+              case 3 -> backRightCanCoderId;
+              default -> 0;
+            });
     driveEncoder = driveSpark.getEncoder();
-    turnEncoder = turnSpark.getAbsoluteEncoder();
+    turnEncoder = turnSpark.getEncoder();
     driveController = driveSpark.getClosedLoopController();
     turnController = turnSpark.getClosedLoopController();
 
@@ -142,16 +153,16 @@ public class ModuleIOSpark implements ModuleIO {
         .averageDepth(2);
     turnConfig
         .closedLoop
-        .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(turnPIDMinInput, turnPIDMaxInput)
         .pid(turnKp, 0.0, turnKd);
     turnConfig
         .signals
-        .absoluteEncoderPositionAlwaysOn(true)
-        .absoluteEncoderPositionPeriodMs((int) (1000.0 / odometryFrequency))
-        .absoluteEncoderVelocityAlwaysOn(true)
-        .absoluteEncoderVelocityPeriodMs(20)
+        .primaryEncoderPositionAlwaysOn(true)
+        .primaryEncoderPositionPeriodMs((int) (1000.0 / odometryFrequency))
+        .primaryEncoderVelocityAlwaysOn(true)
+        .primaryEncoderVelocityPeriodMs(20)
         .appliedOutputPeriodMs(20)
         .busVoltagePeriodMs(20)
         .outputCurrentPeriodMs(20);
@@ -168,6 +179,11 @@ public class ModuleIOSpark implements ModuleIO {
         SparkOdometryThread.getInstance().registerSignal(driveSpark, driveEncoder::getPosition);
     turnPositionQueue =
         SparkOdometryThread.getInstance().registerSignal(turnSpark, turnEncoder::getPosition);
+
+    tryUntilOk(
+        turnSpark,
+        5,
+        () -> turnEncoder.setPosition(cancoder.getAbsolutePosition().getValue().in(Rotation)));
   }
 
   @Override

@@ -12,7 +12,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 
 /** IO implementation for Pigeon 2. */
-public class GyroIOPigeon2 implements GyroIO {
+public class GyroIOADIS implements GyroIO {
   private final ADIS16470_IMU adis;
   // private final Pigeon2 pigeon = new Pigeon2(pigeonCanId);
   // private final StatusSignal<Angle> yaw = pigeon.getYaw();
@@ -20,7 +20,7 @@ public class GyroIOPigeon2 implements GyroIO {
   // private final Queue<Double> yawTimestampQueue;
   // private final StatusSignal<AngularVelocity> yawVelocity = pigeon.getAngularVelocityZWorld();
 
-  public GyroIOPigeon2() {
+  public GyroIOADIS() {
 
     adis = new ADIS16470_IMU();
     // adis.setGyroAngleX(0);
